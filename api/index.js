@@ -35,18 +35,13 @@ export default async function handler(req, res) {
       },
     });
 
-    res.status(200).json({ init_point: response.init_point });
+    res.status(200).json({
+      init_point: response.init_point,
+    });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-    const response = await mercadopago.preferences.create(preference);
-
-    res.status(200).json({ init_point: response.body.init_point });
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      error: error.message,
+    });
   }
 }
