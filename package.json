@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "mercadopago": "^2.0.15"
+    "mercadopago": "^2.0.15",
+    "nodemailer": "^6.9.8"
   }
 }
