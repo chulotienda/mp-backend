@@ -26,11 +26,13 @@ export default async function handler(req, res) {
     const response = await preference.create({
       body: {
         items: items,
+
         back_urls: {
-          success: "https://chulotienda.lovable.app",
-          failure: "https://chulotienda.lovable.app",
-          pending: "https://chulotienda.lovable.app",
+          success: "https://chulotienda.lovable.app/success",
+          failure: "https://chulotienda.lovable.app/failure",
+          pending: "https://chulotienda.lovable.app/pending",
         },
+
         auto_return: "approved",
       },
     });
