@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     console.log("Query completa:", req.query);
     console.log("Body completo:", req.body);
 
-    const paymentId = req.query["data.id"];
+    const paymentId = req.body.data.id;
 
     if (!paymentId) {
       console.log("No payment id");
