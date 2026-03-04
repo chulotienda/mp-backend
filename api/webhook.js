@@ -1,8 +1,11 @@
 import { MercadoPagoConfig, Payment } from "mercadopago";
+import { Resend } from "resend";
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
 });
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
 
@@ -13,6 +16,8 @@ export default async function handler(req, res) {
   try {
 
     console.log("Webhook recibido");
+    console.log("Query completa:", req.query);
+    console.log("Body completo:", req.body);
 
     const paymentId = req.query["data.id"];
 
@@ -31,40 +36,46 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Pago no aprobado" });
     }
 
-    console.log("Pago aprobado, enviando emails...");
+    console.log("Pago aprobado, enviando mails...");
 
-    await fetch("https://mp-backend-alpha.vercel.app/api/send-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        customerName: paymentData.payer.first_name || "Cliente",
-        customerEmail: paymentData.payer.email,
-        customerPhone: paymentData.payer.phone?.number || "",
-        customerAddress: "",
-        customerCity: "",
-        customerProvince: "",
-        customerDni: "",
-        productTitle: "Compra en Chulo Tienda",
-        productPrice: paymentData.transaction_amount,
-        quantity: 1,
-        totalAmount: paymentData.transaction_amount,
-        paymentId: paymentData.id
-      }),
+    const buyerEmail = paymentData.payer.email;
+
+    const htmlCliente = `
+      <h2>Gracias por tu compra</h2>
+      <p>Tu pago fue aprobado correctamente.</p>
+      <p>ID de operación: ${paymentData.id}</p>
+    `;
+
+    const htmlOwner = `
+      <h2>Nueva venta en Chulo Tienda</h2>
+      <p>Email del cliente: ${buyerEmail}</p>
+      <p>ID de pago: ${paymentData.id}</p>
+      <p>Total: ${paymentData.transaction_amount}</p>
+    `;
+
+    await resend.emails.send({
+      from: "Chulo Tienda <onboarding@resend.dev>",
+      to: buyerEmail,
+      subject: "Confirmación de compra - Chulo Tienda",
+      html: htmlCliente,
     });
 
-    console.log("Emails enviados");
+    await resend.emails.send({
+      from: "Chulo Tienda <onboarding@resend.dev>",
+      to: "chulotienda26@gmail.com",
+      subject: "Nueva venta en Chulo Tienda",
+      html: htmlOwner,
+    });
 
-    return res.status(200).json({ message: "OK" });
+    console.log("Mails enviados");
+
+    return res.status(200).json({ message: "Emails enviados" });
 
   } catch (error) {
 
     console.error("Error en webhook:", error);
 
-    return res.status(500).json({
-      error: "Error interno",
-    });
+    return res.status(500).json({ error: "Error interno" });
 
   }
 }
