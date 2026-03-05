@@ -1,11 +1,8 @@
 import { MercadoPagoConfig, Payment } from "mercadopago";
-import { Resend } from "resend";
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
 });
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
 
@@ -16,73 +13,78 @@ export default async function handler(req, res) {
   try {
 
     console.log("Webhook recibido");
+    console.log("Query:", req.query);
+    console.log("Body:", req.body);
 
     const paymentId = req.body?.data?.id;
 
     if (!paymentId) {
+      console.log("No payment id");
       return res.status(200).json({ message: "No payment id" });
     }
 
     const payment = new Payment(client);
+
     const paymentData = await payment.get({ id: paymentId });
 
     console.log("Status del pago:", paymentData.status);
 
     if (paymentData.status !== "approved") {
+      console.log("Pago no aprobado todavía");
       return res.status(200).json({ message: "Pago no aprobado" });
     }
 
-    const order = JSON.parse(paymentData.external_reference);
+    console.log("Pago aprobado correctamente");
 
-    const html = `
-    <div style="font-family:Arial;background:#f4f8fb;padding:40px">
-      <div style="max-width:600px;margin:auto;background:white;padding:30px;border-radius:10px">
+    // recuperar datos del cliente
+    let customerData = {};
 
-        <h2 style="color:#1e73be">Nueva venta en Chulo Tienda</h2>
+    try {
+      customerData = JSON.parse(paymentData.external_reference || "{}");
+    } catch (e) {
+      console.log("Error parseando external_reference");
+    }
 
-        <h3>Datos del cliente</h3>
+    // datos cliente
+    const {
+      customerName,
+      customerEmail,
+      customerPhone,
+      customerAddress,
+      customerCity,
+      customerProvince,
+      customerPostalCode,
+      customerDni,
+      totalAmount
+    } = customerData;
 
-        <p><strong>Nombre:</strong> ${order.customerName}</p>
-        <p><strong>DNI:</strong> ${order.customerDni}</p>
-        <p><strong>Email:</strong> ${order.customerEmail}</p>
-        <p><strong>Teléfono:</strong> ${order.customerPhone}</p>
+    const productTitle = paymentData.description || "Producto";
+    const quantity = paymentData.additional_info?.items?.[0]?.quantity || 1;
 
-        <p><strong>Dirección:</strong> ${order.customerAddress}</p>
-        <p><strong>Ciudad:</strong> ${order.customerCity}</p>
-        <p><strong>Provincia:</strong> ${order.customerProvince}</p>
-        <p><strong>Código Postal:</strong> ${order.customerPostalCode}</p>
-
-        <hr>
-
-        <h3>Detalle de compra</h3>
-
-        ${order.items.map(i => `
-          <p>
-          ${i.title}  
-          Cantidad: ${i.quantity}  
-          Precio: $${i.unit_price}
-          </p>
-        `).join("")}
-
-        <p><strong>Total:</strong> $${order.totalAmount}</p>
-
-        <p><strong>ID de pago:</strong> ${paymentData.id}</p>
-
-      </div>
-    </div>
-    `;
-
-    await resend.emails.send({
-      from: "Chulo Tienda <onboarding@resend.dev>",
-      to: "chulotienda26@gmail.com",
-      subject: "Nueva venta en Chulo Tienda",
-      html: html
+    // enviar email
+    await fetch("https://mp-backend-alpha.vercel.app/api/send-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customerName,
+        customerEmail,
+        customerPhone,
+        customerAddress,
+        customerCity,
+        customerProvince,
+        customerPostalCode,
+        customerDni,
+        productTitle,
+        quantity,
+        totalAmount,
+        paymentId
+      }),
     });
 
-    console.log("Email enviado correctamente");
-
     return res.status(200).json({
-      message: "Pago aprobado y email enviado"
+      message: "Pago aprobado y email enviado",
     });
 
   } catch (error) {
@@ -90,9 +92,8 @@ export default async function handler(req, res) {
     console.error("Error en webhook:", error);
 
     return res.status(500).json({
-      error: "Error interno"
+      error: "Error interno",
     });
 
   }
-
 }
