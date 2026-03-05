@@ -1,11 +1,8 @@
 import { MercadoPagoConfig, Payment } from "mercadopago";
-import { Resend } from "resend";
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
 });
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
 
@@ -36,40 +33,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Pago no aprobado" });
     }
 
-    console.log("Pago aprobado, enviando mails...");
+    console.log("Pago aprobado correctamente");
 
-    const buyerEmail = paymentData.payer.email;
-
-    const htmlCliente = `
-      <h2>Gracias por tu compra</h2>
-      <p>Tu pago fue aprobado correctamente.</p>
-      <p>ID de operación: ${paymentData.id}</p>
-    `;
-
-    const htmlOwner = `
-      <h2>Nueva venta en Chulo Tienda</h2>
-      <p>Email del cliente: ${buyerEmail}</p>
-      <p>ID de pago: ${paymentData.id}</p>
-      <p>Total: ${paymentData.transaction_amount}</p>
-    `;
-
-    await resend.emails.send({
-      from: "Chulo Tienda <onboarding@resend.dev>",
-      to: buyerEmail,
-      subject: "Confirmación de compra - Chulo Tienda",
-      html: htmlCliente,
+    return res.status(200).json({
+      message: "Pago aprobado confirmado"
     });
-
-    await resend.emails.send({
-      from: "Chulo Tienda <onboarding@resend.dev>",
-      to: "chulotienda26@gmail.com",
-      subject: "Nueva venta en Chulo Tienda",
-      html: htmlOwner,
-    });
-
-    console.log("Mails enviados");
-
-    return res.status(200).json({ message: "Emails enviados" });
 
   } catch (error) {
 
@@ -78,4 +46,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Error interno" });
 
   }
+
 }
