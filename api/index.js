@@ -2,7 +2,6 @@ import { MercadoPagoConfig, Preference } from "mercadopago";
 
 export default async function handler(req, res) {
 
-  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -31,7 +30,7 @@ export default async function handler(req, res) {
     } = req.body;
 
     const client = new MercadoPagoConfig({
-      accessToken: process.env.MP_ACCESS_TOKEN,
+      accessToken: process.env.MP_ACCESS_TOKEN
     });
 
     const preference = new Preference(client);
@@ -39,7 +38,7 @@ export default async function handler(req, res) {
     const response = await preference.create({
       body: {
 
-        items: items,
+        items,
 
         external_reference: JSON.stringify({
           customerName,
@@ -50,8 +49,7 @@ export default async function handler(req, res) {
           customerProvince,
           customerPostalCode,
           customerDni,
-          totalAmount,
-          items
+          totalAmount
         }),
 
         back_urls: {
@@ -70,6 +68,8 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
+
+    console.error(error);
 
     res.status(500).json({
       error: error.message
