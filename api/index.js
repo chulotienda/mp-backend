@@ -40,7 +40,22 @@ export default async function handler(req, res) {
 
         items,
 
-        external_reference: JSON.stringify({
+        payer: {
+          name: customerName,
+          email: customerEmail,
+          phone: {
+            number: customerPhone
+          },
+          identification: {
+            type: "DNI",
+            number: customerDni
+          },
+          address: {
+            street_name: customerAddress
+          }
+        },
+
+        metadata: {
           customerName,
           customerEmail,
           customerPhone,
@@ -50,7 +65,9 @@ export default async function handler(req, res) {
           customerPostalCode,
           customerDni,
           totalAmount
-        }),
+        },
+
+        external_reference: "order_" + Date.now(),
 
         back_urls: {
           success: "https://chulotienda.lovable.app/success",
