@@ -36,16 +36,9 @@ export default async function handler(req, res) {
 
     console.log("Pago aprobado correctamente");
 
-    // recuperar datos del cliente
-    let customerData = {};
+    // recuperar datos del cliente desde metadata
+    const customerData = paymentData.metadata || {};
 
-    try {
-      customerData = JSON.parse(paymentData.external_reference || "{}");
-    } catch (e) {
-      console.log("Error parseando external_reference");
-    }
-
-    // datos cliente
     const {
       customerName,
       customerEmail,
@@ -58,8 +51,11 @@ export default async function handler(req, res) {
       totalAmount
     } = customerData;
 
-    const productTitle = paymentData.description || "Producto";
-    const quantity = paymentData.additional_info?.items?.[0]?.quantity || 1;
+    const productTitle =
+      paymentData.additional_info?.items?.[0]?.title || "Producto";
+
+    const quantity =
+      paymentData.additional_info?.items?.[0]?.quantity || 1;
 
     // enviar email
     await fetch("https://mp-backend-alpha.vercel.app/api/send-email", {
