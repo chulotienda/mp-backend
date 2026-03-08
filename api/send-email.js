@@ -23,18 +23,18 @@ export default async function handler(req, res) {
 
   try {
 
-    const payment_id = req.body.payment_id || req.body.paymentId;
+    const body = req.body || {};
 
-    if (!payment_id) {
+    const paymentIdFinal = body.payment_id || body.paymentId;
+
+    if (!paymentIdFinal) {
       return res.status(400).json({ error: "payment_id requerido" });
     }
 
     const payment = new Payment(client);
-    const paymentData = await payment.get({ id: payment_id });
+    const paymentData = await payment.get({ id: paymentIdFinal });
 
-    const metadata = paymentData.metadata || {};
     const payer = paymentData.payer || {};
-
     const items = paymentData.additional_info?.items || [];
 
     const products = items.map(item => ({
@@ -51,6 +51,15 @@ export default async function handler(req, res) {
       </tr>
     `).join("");
 
+    const customerName = body.customerName || payer.first_name || "No informado";
+    const customerEmail = body.customerEmail || payer.email || "No informado";
+    const customerPhone = body.customerPhone || "No informado";
+    const customerDni = body.customerDni || "No informado";
+    const customerAddress = body.customerAddress || "No informado";
+    const customerCity = body.customerCity || "No informado";
+    const customerProvince = body.customerProvince || "No informado";
+    const customerPostalCode = body.customerPostalCode || "No informado";
+
     const logoUrl = "https://raw.githubusercontent.com/chulotienda/mp-backend/main/logo-chulo.png";
 
     const ownerTemplate = `
@@ -63,14 +72,14 @@ export default async function handler(req, res) {
 
           <h2 style="color:#1e73be;">Nueva venta realizada</h2>
 
-          <p><strong>Cliente:</strong> ${metadata.customerName || payer.first_name || "No informado"}</p>
-          <p><strong>Email:</strong> ${metadata.customerEmail || payer.email || "No informado"}</p>
-          <p><strong>Teléfono:</strong> ${metadata.customerPhone || "No informado"}</p>
-          <p><strong>DNI:</strong> ${metadata.customerDni || "No informado"}</p>
-          <p><strong>Dirección:</strong> ${metadata.customerAddress || "No informado"}</p>
-          <p><strong>Ciudad:</strong> ${metadata.customerCity || "No informado"}</p>
-          <p><strong>Provincia:</strong> ${metadata.customerProvince || "No informado"}</p>
-          <p><strong>Código Postal:</strong> ${metadata.customerPostalCode || "No informado"}</p>
+          <p><strong>Cliente:</strong> ${customerName}</p>
+          <p><strong>Email:</strong> ${customerEmail}</p>
+          <p><strong>Teléfono:</strong> ${customerPhone}</p>
+          <p><strong>DNI:</strong> ${customerDni}</p>
+          <p><strong>Dirección:</strong> ${customerAddress}</p>
+          <p><strong>Ciudad:</strong> ${customerCity}</p>
+          <p><strong>Provincia:</strong> ${customerProvince}</p>
+          <p><strong>Código Postal:</strong> ${customerPostalCode}</p>
 
           <h3 style="margin-top:30px;color:#1e73be;">Detalle del pedido</h3>
 
@@ -90,7 +99,7 @@ export default async function handler(req, res) {
           <h3 style="text-align:right;margin-top:20px;">Total: $${paymentData.transaction_amount}</h3>
 
           <p style="margin-top:20px;font-size:12px;color:#777;">
-            ID de pago: ${payment_id}
+            ID de pago: ${paymentIdFinal}
           </p>
 
         </div>
