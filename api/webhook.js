@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Pago no aprobado" });
     }
 
-    // AHORA LEEMOS DESDE METADATA
+    // DATOS DEL CLIENTE DESDE METADATA
     const orderData = paymentData.metadata || {};
 
     const {
@@ -38,18 +38,21 @@ export default async function handler(req, res) {
       customerProvince,
       customerPostalCode,
       customerDni,
-      totalAmount,
-      items
+      totalAmount
     } = orderData;
 
-    const products = (items || []).map(item => ({
+    // PRODUCTOS DESDE MERCADOPAGO
+    const items = paymentData.additional_info?.items || [];
+
+    const products = items.map(item => ({
       title: item.title || "Producto",
       quantity: item.quantity || 1,
       price: item.unit_price || 0
     }));
 
-    console.log("PRODUCTOS PARA EMAIL:", products);
+    console.log("PRODUCTOS RECIBIDOS:", products);
 
+    // ENVIAR EMAIL
     await fetch("https://mp-backend-alpha.vercel.app/api/send-email", {
       method: "POST",
       headers: {
