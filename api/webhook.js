@@ -26,13 +26,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Pago no aprobado" });
     }
 
-    let orderData = {};
-
-    try {
-      orderData = JSON.parse(paymentData.external_reference || "{}");
-    } catch (e) {
-      console.log("Error leyendo external_reference");
-    }
+    // AHORA LEEMOS DESDE METADATA
+    const orderData = paymentData.metadata || {};
 
     const {
       customerName,
