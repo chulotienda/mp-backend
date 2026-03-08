@@ -1,4 +1,11 @@
-import { MercadoPagoConfig, Preference } from "mercadopago";
+import { Resend } from "resend";
+import { MercadoPagoConfig, Payment } from "mercadopago";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN,
+});
 
 export default async function handler(req, res) {
 
@@ -11,92 +18,99 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método no permitido" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
 
-    const {
-      items,
-      customerName,
-      customerEmail,
-      customerPhone,
-      customerAddress,
-      customerCity,
-      customerProvince,
-      customerPostalCode,
-      customerDni,
-      totalAmount
-    } = req.body;
+    const payment_id = req.body.payment_id || req.body.paymentId;
 
-    console.log("BODY COMPLETO:", req.body);
-    console.log("ITEMS RECIBIDOS:", items);
+    if (!payment_id) {
+      return res.status(400).json({ error: "payment_id requerido" });
+    }
 
-    const client = new MercadoPagoConfig({
-      accessToken: process.env.MP_ACCESS_TOKEN
+    const payment = new Payment(client);
+    const paymentData = await payment.get({ id: payment_id });
+
+    const metadata = paymentData.metadata || {};
+    const payer = paymentData.payer || {};
+
+    const items = paymentData.additional_info?.items || [];
+
+    const products = items.map(item => ({
+      title: item.title,
+      quantity: item.quantity,
+      price: item.unit_price
+    }));
+
+    const productRows = products.map(product => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #ddd;">${product.title}</td>
+        <td style="padding:8px;border-bottom:1px solid #ddd;text-align:center;">${product.quantity}</td>
+        <td style="padding:8px;border-bottom:1px solid #ddd;text-align:right;">$${product.price}</td>
+      </tr>
+    `).join("");
+
+    const logoUrl = "https://raw.githubusercontent.com/chulotienda/mp-backend/main/logo-chulo.png";
+
+    const ownerTemplate = `
+      <div style="font-family: Arial, sans-serif; background:#f4f8fb; padding:40px;">
+        <div style="max-width:700px;margin:auto;background:white;padding:30px;border-radius:10px;">
+
+          <div style="text-align:center;margin-bottom:30px;">
+            <img src="${logoUrl}" style="max-width:200px;">
+          </div>
+
+          <h2 style="color:#1e73be;">Nueva venta realizada</h2>
+
+          <p><strong>Cliente:</strong> ${metadata.customerName || payer.first_name || "No informado"}</p>
+          <p><strong>Email:</strong> ${metadata.customerEmail || payer.email || "No informado"}</p>
+          <p><strong>Teléfono:</strong> ${metadata.customerPhone || "No informado"}</p>
+          <p><strong>DNI:</strong> ${metadata.customerDni || "No informado"}</p>
+          <p><strong>Dirección:</strong> ${metadata.customerAddress || "No informado"}</p>
+          <p><strong>Ciudad:</strong> ${metadata.customerCity || "No informado"}</p>
+          <p><strong>Provincia:</strong> ${metadata.customerProvince || "No informado"}</p>
+          <p><strong>Código Postal:</strong> ${metadata.customerPostalCode || "No informado"}</p>
+
+          <h3 style="margin-top:30px;color:#1e73be;">Detalle del pedido</h3>
+
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f0f0f0;">
+                <th style="padding:10px;text-align:left;">Producto</th>
+                <th style="padding:10px;text-align:center;">Cantidad</th>
+                <th style="padding:10px;text-align:right;">Precio</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productRows}
+            </tbody>
+          </table>
+
+          <h3 style="text-align:right;margin-top:20px;">Total: $${paymentData.transaction_amount}</h3>
+
+          <p style="margin-top:20px;font-size:12px;color:#777;">
+            ID de pago: ${payment_id}
+          </p>
+
+        </div>
+      </div>
+    `;
+
+    await resend.emails.send({
+      from: "Chulo Tienda <onboarding@resend.dev>",
+      to: "chulotienda26@gmail.com",
+      subject: "Nueva venta en Chulo Tienda",
+      html: ownerTemplate
     });
 
-    const preference = new Preference(client);
-
-    const response = await preference.create({
-      body: {
-
-        items,
-
-        payer: {
-          name: customerName,
-          email: customerEmail,
-          phone: {
-            number: customerPhone
-          },
-          identification: {
-            type: "DNI",
-            number: customerDni
-          },
-          address: {
-            street_name: customerAddress
-          }
-        },
-
-        // SOLO ID DE ORDEN (esto evita errores de tamaño)
-        external_reference: "order_" + Date.now(),
-
-        // AQUÍ VAN LOS DATOS COMPLETOS
-        metadata: {
-          customerName,
-          customerEmail,
-          customerPhone,
-          customerAddress,
-          customerCity,
-          customerProvince,
-          customerPostalCode,
-          customerDni,
-          totalAmount,
-          items
-        },
-
-        back_urls: {
-          success: "https://chulotienda.lovable.app/success",
-          failure: "https://chulotienda.lovable.app/failure",
-          pending: "https://chulotienda.lovable.app/pending"
-        },
-
-        auto_return: "approved"
-
-      }
-    });
-
-    res.status(200).json({
-      init_point: response.init_point
-    });
+    return res.status(200).json({ success: true });
 
   } catch (error) {
 
-    console.error("ERROR INDEX:", error);
+    console.error("ERROR SEND EMAIL:", error);
 
-    res.status(500).json({
-      error: error.message
-    });
+    return res.status(500).json({ error: "Error sending email" });
 
   }
 
