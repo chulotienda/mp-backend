@@ -29,6 +29,10 @@ export default async function handler(req, res) {
       totalAmount
     } = req.body;
 
+    // DEBUG PARA VER SI LOVABLE ENVÍA LOS PRODUCTOS
+    console.log("BODY COMPLETO:", req.body);
+    console.log("ITEMS RECIBIDOS:", items);
+
     const client = new MercadoPagoConfig({
       accessToken: process.env.MP_ACCESS_TOKEN
     });
@@ -85,7 +89,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
 
-    console.error(error);
+    console.error("ERROR INDEX:", error);
 
     res.status(500).json({
       error: error.message
