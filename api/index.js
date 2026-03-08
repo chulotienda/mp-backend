@@ -29,7 +29,6 @@ export default async function handler(req, res) {
       totalAmount
     } = req.body;
 
-    // DEBUG PARA VER SI LOVABLE ENVÍA LOS PRODUCTOS
     console.log("BODY COMPLETO:", req.body);
     console.log("ITEMS RECIBIDOS:", items);
 
@@ -59,7 +58,7 @@ export default async function handler(req, res) {
           }
         },
 
-        metadata: {
+        external_reference: JSON.stringify({
           customerName,
           customerEmail,
           customerPhone,
@@ -70,7 +69,7 @@ export default async function handler(req, res) {
           customerDni,
           totalAmount,
           items
-        },
+        }),
 
         back_urls: {
           success: "https://chulotienda.lovable.app/success",
@@ -96,4 +95,5 @@ export default async function handler(req, res) {
     });
 
   }
+
 }
