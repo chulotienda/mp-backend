@@ -1,6 +1,11 @@
 import { Resend } from 'resend';
+import { MercadoPagoConfig, Payment } from 'mercadopago';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN
+});
 
 export default async function handler(req, res) {
 
@@ -18,29 +23,37 @@ export default async function handler(req, res) {
 
   try {
 
-    const {
-      customerName,
-      customerEmail,
-      customerPhone,
-      customerAddress,
-      customerCity,
-      customerProvince,
-      customerPostalCode,
-      customerDni,
-      products,
-      totalAmount,
-      paymentId
-    } = req.body;
+    const { payment_id } = req.body;
+
+    if (!payment_id) {
+      return res.status(400).json({ error: "payment_id requerido" });
+    }
+
+    const payment = new Payment(client);
+    const paymentData = await payment.get({ id: payment_id });
+
+    const payer = paymentData.payer || {};
+    const address = payer.address || {};
+    const items = paymentData.additional_info?.items || [];
+
+    const customerName = payer.first_name + " " + (payer.last_name || "");
+    const customerEmail = payer.email || "No disponible";
+    const customerPhone = payer.phone?.number || "No disponible";
+    const customerAddress = address.street_name || "No disponible";
+    const customerCity = address.city || "No disponible";
+    const customerProvince = address.state || "No disponible";
+    const customerPostalCode = address.zip_code || "No disponible";
+    const customerDni = payer.identification?.number || "No disponible";
+
+    const totalAmount = paymentData.transaction_amount || 0;
 
     const logoUrl = "https://raw.githubusercontent.com/chulotienda/mp-backend/main/logo-chulo.png";
 
-    const productList = Array.isArray(products) ? products : [];
-
-    const productRows = productList.map(product => `
+    const productRows = items.map(product => `
       <tr>
         <td style="padding:8px;border-bottom:1px solid #ddd;">${product.title}</td>
         <td style="padding:8px;border-bottom:1px solid #ddd;text-align:center;">${product.quantity}</td>
-        <td style="padding:8px;border-bottom:1px solid #ddd;text-align:right;">$${product.price}</td>
+        <td style="padding:8px;border-bottom:1px solid #ddd;text-align:right;">$${product.unit_price}</td>
       </tr>
     `).join("");
 
@@ -81,7 +94,7 @@ export default async function handler(req, res) {
           <h3 style="text-align:right;margin-top:20px;">Total: $${totalAmount}</h3>
 
           <p style="margin-top:20px;font-size:12px;color:#777;">
-            ID de pago: ${paymentId}
+            ID de pago: ${payment_id}
           </p>
 
         </div>
