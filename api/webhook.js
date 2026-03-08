@@ -12,14 +12,9 @@ export default async function handler(req, res) {
 
   try {
 
-    console.log("Webhook recibido");
-    console.log("Query:", req.query);
-    console.log("Body:", req.body);
-
     const paymentId = req.body?.data?.id;
 
     if (!paymentId) {
-      console.log("No payment id");
       return res.status(200).json({ message: "No payment id" });
     }
 
@@ -27,16 +22,10 @@ export default async function handler(req, res) {
 
     const paymentData = await payment.get({ id: paymentId });
 
-    console.log("Status del pago:", paymentData.status);
-
     if (paymentData.status !== "approved") {
-      console.log("Pago no aprobado todavía");
       return res.status(200).json({ message: "Pago no aprobado" });
     }
 
-    console.log("Pago aprobado correctamente");
-
-    // recuperar datos del cliente desde metadata
     const customerData = paymentData.metadata || {};
 
     const {
@@ -51,13 +40,14 @@ export default async function handler(req, res) {
       totalAmount
     } = customerData;
 
-    const productTitle =
-      paymentData.additional_info?.items?.[0]?.title || "Producto";
+    const items = paymentData.additional_info?.items || [];
 
-    const quantity =
-      paymentData.additional_info?.items?.[0]?.quantity || 1;
+    const products = items.map(item => ({
+      title: item.title,
+      quantity: item.quantity,
+      price: item.unit_price
+    }));
 
-    // enviar email
     await fetch("https://mp-backend-alpha.vercel.app/api/send-email", {
       method: "POST",
       headers: {
@@ -72,8 +62,7 @@ export default async function handler(req, res) {
         customerProvince,
         customerPostalCode,
         customerDni,
-        productTitle,
-        quantity,
+        products,
         totalAmount,
         paymentId
       }),
@@ -85,11 +74,12 @@ export default async function handler(req, res) {
 
   } catch (error) {
 
-    console.error("Error en webhook:", error);
+    console.error(error);
 
     return res.status(500).json({
       error: "Error interno",
     });
 
   }
+
 }
