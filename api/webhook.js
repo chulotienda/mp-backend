@@ -26,7 +26,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Pago no aprobado" });
     }
 
-    const customerData = paymentData.metadata || {};
+    // DATOS DEL CLIENTE
+    let customerData = {};
+
+    try {
+      customerData = JSON.parse(paymentData.external_reference || "{}");
+    } catch (e) {
+      console.log("Error parseando external_reference");
+    }
 
     const {
       customerName,
@@ -40,14 +47,16 @@ export default async function handler(req, res) {
       totalAmount
     } = customerData;
 
+    // PRODUCTOS DEL CARRITO
     const items = paymentData.additional_info?.items || [];
 
     const products = items.map(item => ({
-      title: item.title,
-      quantity: item.quantity,
-      price: item.unit_price
+      title: item.title || "Producto",
+      quantity: item.quantity || 1,
+      price: item.unit_price || 0
     }));
 
+    // ENVIAR EMAIL
     await fetch("https://mp-backend-alpha.vercel.app/api/send-email", {
       method: "POST",
       headers: {
@@ -74,7 +83,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
 
-    console.error(error);
+    console.error("Error en webhook:", error);
 
     return res.status(500).json({
       error: "Error interno",
