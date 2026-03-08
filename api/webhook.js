@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Pago no aprobado" });
     }
 
-    // DATOS DEL CLIENTE
+    // DATOS DEL CLIENTE Y PRODUCTOS
     let customerData = {};
 
     try {
@@ -44,13 +44,12 @@ export default async function handler(req, res) {
       customerProvince,
       customerPostalCode,
       customerDni,
-      totalAmount
+      totalAmount,
+      items
     } = customerData;
 
-    // PRODUCTOS DEL CARRITO
-    const items = paymentData.additional_info?.items || [];
-
-    const products = items.map(item => ({
+    // FORMATEAR PRODUCTOS
+    const products = (items || []).map(item => ({
       title: item.title || "Producto",
       quantity: item.quantity || 1,
       price: item.unit_price || 0
