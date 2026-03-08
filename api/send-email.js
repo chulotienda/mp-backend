@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
   try {
 
-    const { payment_id } = req.body;
+    const payment_id = req.body.payment_id || req.body.paymentId;
 
     if (!payment_id) {
       return res.status(400).json({ error: "payment_id requerido" });
