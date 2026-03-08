@@ -33,6 +33,8 @@ export default async function handler(req, res) {
     const paymentData = await payment.get({ id: payment_id });
 
     const metadata = paymentData.metadata || {};
+    const payer = paymentData.payer || {};
+
     const items = paymentData.additional_info?.items || [];
 
     const products = items.map(item => ({
@@ -61,14 +63,14 @@ export default async function handler(req, res) {
 
           <h2 style="color:#1e73be;">Nueva venta realizada</h2>
 
-          <p><strong>Cliente:</strong> ${metadata.customerName}</p>
-          <p><strong>Email:</strong> ${metadata.customerEmail}</p>
-          <p><strong>Teléfono:</strong> ${metadata.customerPhone}</p>
-          <p><strong>DNI:</strong> ${metadata.customerDni}</p>
-          <p><strong>Dirección:</strong> ${metadata.customerAddress}</p>
-          <p><strong>Ciudad:</strong> ${metadata.customerCity}</p>
-          <p><strong>Provincia:</strong> ${metadata.customerProvince}</p>
-          <p><strong>Código Postal:</strong> ${metadata.customerPostalCode}</p>
+          <p><strong>Cliente:</strong> ${metadata.customerName || payer.first_name || "No informado"}</p>
+          <p><strong>Email:</strong> ${metadata.customerEmail || payer.email || "No informado"}</p>
+          <p><strong>Teléfono:</strong> ${metadata.customerPhone || "No informado"}</p>
+          <p><strong>DNI:</strong> ${metadata.customerDni || "No informado"}</p>
+          <p><strong>Dirección:</strong> ${metadata.customerAddress || "No informado"}</p>
+          <p><strong>Ciudad:</strong> ${metadata.customerCity || "No informado"}</p>
+          <p><strong>Provincia:</strong> ${metadata.customerProvince || "No informado"}</p>
+          <p><strong>Código Postal:</strong> ${metadata.customerPostalCode || "No informado"}</p>
 
           <h3 style="margin-top:30px;color:#1e73be;">Detalle del pedido</h3>
 
