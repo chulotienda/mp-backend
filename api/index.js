@@ -68,8 +68,6 @@ export default async function handler(req, res) {
           items
         },
 
-        external_reference: "order_" + Date.now(),
-
         back_urls: {
           success: "https://chulotienda.lovable.app/success",
           failure: "https://chulotienda.lovable.app/failure",
