@@ -34,7 +34,10 @@ export default async function handler(req, res) {
 
     const logoUrl = "https://raw.githubusercontent.com/chulotienda/mp-backend/main/logo-chulo.png";
 
-    const productRows = products.map(product => `
+    // SEGURIDAD POR SI PRODUCTS VIENE VACÍO
+    const productList = Array.isArray(products) ? products : [];
+
+    const productRows = productList.map(product => `
       <tr>
         <td style="padding:8px;border-bottom:1px solid #ddd;">${product.title}</td>
         <td style="padding:8px;border-bottom:1px solid #ddd;text-align:center;">${product.quantity}</td>
