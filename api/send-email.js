@@ -18,6 +18,7 @@ export default async function handler(req, res) {
   }
 
   try {
+
     const {
       customerName,
       customerEmail,
@@ -106,14 +107,14 @@ export default async function handler(req, res) {
     `;
 
     await resend.emails.send({
-      from: 'Chulo Tienda <chulotienda26@gmail.com>',
+      from: 'Chulo Tienda <onboarding@resend.dev>',
       to: customerEmail,
       subject: 'Confirmación de compra - Chulo Tienda',
       html: htmlTemplate
     });
 
     await resend.emails.send({
-      from: 'Chulo Tienda <chulotienda26@gmail.com>',
+      from: 'Chulo Tienda <onboarding@resend.dev>',
       to: 'chulotienda26@gmail.com',
       subject: 'Nueva venta en Chulo Tienda',
       html: ownerTemplate
@@ -125,4 +126,5 @@ export default async function handler(req, res) {
     console.error(error);
     return res.status(500).json({ error: 'Error sending email' });
   }
+
 }
