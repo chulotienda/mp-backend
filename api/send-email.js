@@ -24,7 +24,6 @@ export default async function handler(req, res) {
   try {
 
     const body = req.body || {};
-
     const paymentIdFinal = body.payment_id || body.paymentId;
 
     if (!paymentIdFinal) {
@@ -52,7 +51,7 @@ export default async function handler(req, res) {
     `).join("");
 
     const customerName = body.customerName || payer.first_name || "No informado";
-    const customerEmail = body.customerEmail || payer.email || "No informado";
+    const customerEmail = body.customerEmail || payer.email || "";
     const customerPhone = body.customerPhone || "No informado";
     const customerDni = body.customerDni || "No informado";
     const customerAddress = body.customerAddress || "No informado";
@@ -62,7 +61,7 @@ export default async function handler(req, res) {
 
     const logoUrl = "https://raw.githubusercontent.com/chulotienda/mp-backend/main/logo-chulo.png";
 
-    const ownerTemplate = `
+    const emailTemplate = `
       <div style="font-family: Arial, sans-serif; background:#f4f8fb; padding:40px;">
         <div style="max-width:700px;margin:auto;background:white;padding:30px;border-radius:10px;">
 
@@ -70,7 +69,7 @@ export default async function handler(req, res) {
             <img src="${logoUrl}" style="max-width:200px;">
           </div>
 
-          <h2 style="color:#1e73be;">Nueva venta realizada</h2>
+          <h2 style="color:#1e73be;">Confirmación de compra</h2>
 
           <p><strong>Cliente:</strong> ${customerName}</p>
           <p><strong>Email:</strong> ${customerEmail}</p>
@@ -106,12 +105,23 @@ export default async function handler(req, res) {
       </div>
     `;
 
+    // EMAIL PARA EL DUEÑO DE LA TIENDA
     await resend.emails.send({
       from: "Chulo Tienda <onboarding@resend.dev>",
-      to: ["chulotienda26@gmail.com", customerEmail],
-      subject: "Confirmación de compra - Chulo Tienda",
-      html: ownerTemplate
+      to: "chulotienda26@gmail.com",
+      subject: "Nueva venta en Chulo Tienda",
+      html: emailTemplate
     });
+
+    // EMAIL PARA EL CLIENTE
+    if (customerEmail) {
+      await resend.emails.send({
+        from: "Chulo Tienda <onboarding@resend.dev>",
+        to: customerEmail,
+        subject: "Confirmación de tu compra",
+        html: emailTemplate
+      });
+    }
 
     return res.status(200).json({ success: true });
 
