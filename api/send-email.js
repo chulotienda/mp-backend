@@ -1,24 +1,24 @@
-import { Resend } from 'resend';
-import { MercadoPagoConfig, Payment } from 'mercadopago';
+import { Resend } from "resend";
+import { MercadoPagoConfig, Payment } from "mercadopago";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const client = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN
+  accessToken: process.env.MP_ACCESS_TOKEN,
 });
 
 export default async function handler(req, res) {
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
@@ -32,30 +32,24 @@ export default async function handler(req, res) {
     const payment = new Payment(client);
     const paymentData = await payment.get({ id: payment_id });
 
-    const payer = paymentData.payer || {};
-    const address = payer.address || {};
+    const metadata = paymentData.metadata || {};
     const items = paymentData.additional_info?.items || [];
 
-    const customerName = payer.first_name + " " + (payer.last_name || "");
-    const customerEmail = payer.email || "No disponible";
-    const customerPhone = payer.phone?.number || "No disponible";
-    const customerAddress = address.street_name || "No disponible";
-    const customerCity = address.city || "No disponible";
-    const customerProvince = address.state || "No disponible";
-    const customerPostalCode = address.zip_code || "No disponible";
-    const customerDni = payer.identification?.number || "No disponible";
+    const products = items.map(item => ({
+      title: item.title,
+      quantity: item.quantity,
+      price: item.unit_price
+    }));
 
-    const totalAmount = paymentData.transaction_amount || 0;
-
-    const logoUrl = "https://raw.githubusercontent.com/chulotienda/mp-backend/main/logo-chulo.png";
-
-    const productRows = items.map(product => `
+    const productRows = products.map(product => `
       <tr>
         <td style="padding:8px;border-bottom:1px solid #ddd;">${product.title}</td>
         <td style="padding:8px;border-bottom:1px solid #ddd;text-align:center;">${product.quantity}</td>
-        <td style="padding:8px;border-bottom:1px solid #ddd;text-align:right;">$${product.unit_price}</td>
+        <td style="padding:8px;border-bottom:1px solid #ddd;text-align:right;">$${product.price}</td>
       </tr>
     `).join("");
+
+    const logoUrl = "https://raw.githubusercontent.com/chulotienda/mp-backend/main/logo-chulo.png";
 
     const ownerTemplate = `
       <div style="font-family: Arial, sans-serif; background:#f4f8fb; padding:40px;">
@@ -67,14 +61,14 @@ export default async function handler(req, res) {
 
           <h2 style="color:#1e73be;">Nueva venta realizada</h2>
 
-          <p><strong>Cliente:</strong> ${customerName}</p>
-          <p><strong>Email:</strong> ${customerEmail}</p>
-          <p><strong>Teléfono:</strong> ${customerPhone}</p>
-          <p><strong>DNI:</strong> ${customerDni}</p>
-          <p><strong>Dirección:</strong> ${customerAddress}</p>
-          <p><strong>Ciudad:</strong> ${customerCity}</p>
-          <p><strong>Provincia:</strong> ${customerProvince}</p>
-          <p><strong>Código Postal:</strong> ${customerPostalCode}</p>
+          <p><strong>Cliente:</strong> ${metadata.customerName}</p>
+          <p><strong>Email:</strong> ${metadata.customerEmail}</p>
+          <p><strong>Teléfono:</strong> ${metadata.customerPhone}</p>
+          <p><strong>DNI:</strong> ${metadata.customerDni}</p>
+          <p><strong>Dirección:</strong> ${metadata.customerAddress}</p>
+          <p><strong>Ciudad:</strong> ${metadata.customerCity}</p>
+          <p><strong>Provincia:</strong> ${metadata.customerProvince}</p>
+          <p><strong>Código Postal:</strong> ${metadata.customerPostalCode}</p>
 
           <h3 style="margin-top:30px;color:#1e73be;">Detalle del pedido</h3>
 
@@ -91,7 +85,7 @@ export default async function handler(req, res) {
             </tbody>
           </table>
 
-          <h3 style="text-align:right;margin-top:20px;">Total: $${totalAmount}</h3>
+          <h3 style="text-align:right;margin-top:20px;">Total: $${paymentData.transaction_amount}</h3>
 
           <p style="margin-top:20px;font-size:12px;color:#777;">
             ID de pago: ${payment_id}
@@ -102,9 +96,9 @@ export default async function handler(req, res) {
     `;
 
     await resend.emails.send({
-      from: 'Chulo Tienda <onboarding@resend.dev>',
-      to: 'chulotienda26@gmail.com',
-      subject: 'Nueva venta en Chulo Tienda',
+      from: "Chulo Tienda <onboarding@resend.dev>",
+      to: "chulotienda26@gmail.com",
+      subject: "Nueva venta en Chulo Tienda",
       html: ownerTemplate
     });
 
@@ -112,9 +106,9 @@ export default async function handler(req, res) {
 
   } catch (error) {
 
-    console.error(error);
+    console.error("ERROR SEND EMAIL:", error);
 
-    return res.status(500).json({ error: 'Error sending email' });
+    return res.status(500).json({ error: "Error sending email" });
 
   }
 
