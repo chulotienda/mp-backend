@@ -34,7 +34,6 @@ export default async function handler(req, res) {
 
     const logoUrl = "https://raw.githubusercontent.com/chulotienda/mp-backend/main/logo-chulo.png";
 
-    // SEGURIDAD POR SI PRODUCTS VIENE VACÍO
     const productList = Array.isArray(products) ? products : [];
 
     const productRows = productList.map(product => `
