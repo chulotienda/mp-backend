@@ -108,8 +108,8 @@ export default async function handler(req, res) {
 
     await resend.emails.send({
       from: "Chulo Tienda <onboarding@resend.dev>",
-      to: "chulotienda26@gmail.com",
-      subject: "Nueva venta en Chulo Tienda",
+      to: ["chulotienda26@gmail.com", customerEmail],
+      subject: "Confirmación de compra - Chulo Tienda",
       html: ownerTemplate
     });
 
