@@ -58,7 +58,11 @@ export default async function handler(req, res) {
           }
         },
 
-        external_reference: JSON.stringify({
+        // SOLO ID DE ORDEN (esto evita errores de tamaño)
+        external_reference: "order_" + Date.now(),
+
+        // AQUÍ VAN LOS DATOS COMPLETOS
+        metadata: {
           customerName,
           customerEmail,
           customerPhone,
@@ -69,7 +73,7 @@ export default async function handler(req, res) {
           customerDni,
           totalAmount,
           items
-        }),
+        },
 
         back_urls: {
           success: "https://chulotienda.lovable.app/success",
