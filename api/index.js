@@ -64,7 +64,8 @@ export default async function handler(req, res) {
           customerProvince,
           customerPostalCode,
           customerDni,
-          totalAmount
+          totalAmount,
+          items
         },
 
         external_reference: "order_" + Date.now(),
