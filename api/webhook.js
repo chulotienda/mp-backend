@@ -26,7 +26,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Pago no aprobado" });
     }
 
-    const metadata = paymentData.metadata || {};
+    let orderData = {};
+
+    try {
+      orderData = JSON.parse(paymentData.external_reference || "{}");
+    } catch (e) {
+      console.log("Error leyendo external_reference");
+    }
 
     const {
       customerName,
@@ -39,13 +45,15 @@ export default async function handler(req, res) {
       customerDni,
       totalAmount,
       items
-    } = metadata;
+    } = orderData;
 
     const products = (items || []).map(item => ({
       title: item.title || "Producto",
       quantity: item.quantity || 1,
       price: item.unit_price || 0
     }));
+
+    console.log("PRODUCTOS PARA EMAIL:", products);
 
     await fetch("https://mp-backend-alpha.vercel.app/api/send-email", {
       method: "POST",
